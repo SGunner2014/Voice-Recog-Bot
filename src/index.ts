@@ -1,44 +1,48 @@
-import * as fs from "fs";
-import * as dotenv from "dotenv";
-import { Readable } from "stream";
-import * as Discord from "discord.js";
-import { OpusEncoder } from "@discordjs/opus";
-import { VOICE_CHANNEL_ID } from "./constants";
+import { config } from "dotenv";
+import { Silence } from "./classes/Silence";
+import { Client, VoiceChannel, VoiceConnection } from "discord.js";
+import { VoiceChannelState } from "./classes/VoiceChannelState";
 
-const encoder = new OpusEncoder(48000, 2);
-
-dotenv.config();
-
-const client = new Discord.Client();
-
-class Silence extends Readable {
-  _read() {
-    this.push(Buffer.from([0xf8, 0xff, 0xfe]));
-  }
-}
+config();
+const client = new Client();
+let channelState: VoiceChannelState;
 
 client.on("ready", async () => {
-  console.log("Ready");
+  console.log("Logged in and connected");
 
-  let channel = (await client.channels.fetch(
-    VOICE_CHANNEL_ID
-  )) as Discord.VoiceChannel;
+  const voice_channel = (await client.channels.fetch(
+    process.env.VOICE_CHANNEL
+  )) as VoiceChannel;
+  voice_channel.join().then(async (connection: VoiceConnection) => {
+    console.log("Joined voice channel");
 
-  channel.join().then(async (connection) => {
-    console.log("joined");
+    channelState = new VoiceChannelState(connection);
+    channelState.setChannelId(process.env.VOICE_CHANNEL);
     connection.play(new Silence(), { type: "opus" });
-    const userId = "95641439161028608";
-    const audio = connection.receiver.createStream(userId, {
-      mode: "opus",
-      end: "manual",
-    });
-    audio
-      .on("data", (chunk) => console.log(chunk))
-      .on("close", () => console.log("closed"));
-    setTimeout(() => {
-      connection.play(audio, { type: "opus" });
-    }, 600);
+
+    channelState.handleJoinedChannel(connection);
   });
 });
+
+client.on("voiceStateUpdate", (oldState, newState) => {
+  setTimeout(() => {
+    if (
+      oldState.member.id !== "793651209562226705" ||
+      newState.member.id !== "793651209562226705"
+    ) {
+      if (newState.channel) {
+        // User has connected
+        channelState.addConnectedUser(newState.member);
+        channelState.createStream(newState.member);
+      } else if (oldState.channel) {
+        // User has disconnected
+        channelState.removeConnectedUser(oldState.member);
+        channelState.removeStream(oldState.member);
+      }
+    }
+  }, 600);
+});
+
+client.on("guildMemberSpeaking", (member) => {});
 
 client.login(process.env.TOKEN);
