@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { Silence } from "./classes/Silence";
 import { Client, VoiceChannel, VoiceConnection } from "discord.js";
 import { VoiceChannelState } from "./classes/VoiceChannelState";
+import { VoiceCommandHandler } from "./classes/VoiceCommandHandler";
 
 config();
 const client = new Client();
@@ -16,7 +17,10 @@ client.on("ready", async () => {
   voice_channel.join().then(async (connection: VoiceConnection) => {
     console.log("Joined voice channel");
 
-    channelState = new VoiceChannelState(connection);
+    channelState = new VoiceChannelState(
+      connection,
+      new VoiceCommandHandler(client)
+    );
     channelState.setChannelId(process.env.VOICE_CHANNEL);
     connection.play(new Silence(), { type: "opus" });
 

@@ -1,5 +1,5 @@
 export interface IIntentResponse {
   id: string;
-  name: string;
+  name: "add_song";
   confidence: number;
 }

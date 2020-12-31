@@ -1,18 +1,22 @@
 import { GuildMember, User, VoiceConnection } from "discord.js";
-import { Wit } from "node-wit";
 
 import { VoiceStream } from "./VoiceStream";
+import { VoiceCommandHandler } from "./VoiceCommandHandler";
 
 export class VoiceChannelState {
   private channelId: string;
   private connection: VoiceConnection;
+  private commandHandler: VoiceCommandHandler;
   private connectedUsers: { [id: string]: GuildMember };
   private connectedStreams: { [id: string]: VoiceStream };
 
-  constructor(connection: VoiceConnection) {
+  constructor(
+    connection: VoiceConnection,
+    commandHandler: VoiceCommandHandler
+  ) {
     this.connectedUsers = {};
-    this.connectedStreams = {};
     this.connection = connection;
+    this.commandHandler = commandHandler;
 
     this.connection.on("speaking", (user) => {
       this.createStream(user);
@@ -39,13 +43,14 @@ export class VoiceChannelState {
    * @param {GuildMember} member
    */
   public createStream(member: GuildMember | User) {
-    const voiceStream = new VoiceStream(member, this.connection);
-    this.connectedStreams[member.id] = voiceStream;
+    const voiceStream = new VoiceStream(
+      member,
+      this.connection,
+      this.commandHandler
+    );
   }
 
-  public removeStream(member: GuildMember) {
-    delete this.connectedStreams[member.id];
-  }
+  public removeStream(member: GuildMember) {}
 
   public handleJoinedChannel(connection: VoiceConnection) {
     connection.channel.members.forEach((member) => {
