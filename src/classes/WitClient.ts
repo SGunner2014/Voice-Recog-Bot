@@ -1,6 +1,9 @@
-import axios, { AxiosInstance } from "axios";
+import axios from "axios";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const api = axios.create({
   baseURL: "https://api.wit.ai",
-  headers: { Authorization: "Bearer B7PML5V2Y7Y6KDSSG34Z73IKDVVYYWUO" },
+  headers: { Authorization: `Bearer ${process.env.API_TOKEN}` },
 });
