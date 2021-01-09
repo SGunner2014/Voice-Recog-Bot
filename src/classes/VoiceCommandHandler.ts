@@ -27,7 +27,7 @@ export class VoiceCommandHandler {
 
     switch (intent.name) {
       case "add_song":
-        DiscordClient.handleAddSong(this.client, response);
+        this.discordClient.handleAddSong(this.client, response);
         break;
     }
   }

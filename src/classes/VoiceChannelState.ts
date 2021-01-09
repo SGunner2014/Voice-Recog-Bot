@@ -5,10 +5,10 @@ import { VoiceCommandHandler } from "./VoiceCommandHandler";
 
 export class VoiceChannelState {
   private channelId: string;
+  private ignored_users: string[];
   private connection: VoiceConnection;
   private commandHandler: VoiceCommandHandler;
   private connectedUsers: { [id: string]: GuildMember };
-  private connectedStreams: { [id: string]: VoiceStream };
 
   constructor(
     connection: VoiceConnection,
@@ -21,6 +21,8 @@ export class VoiceChannelState {
     this.connection.on("speaking", (user) => {
       this.createStream(user);
     });
+
+    this.ignored_users = process.env.IGNORED_USERS.split(",");
   }
 
   /**
@@ -43,15 +45,18 @@ export class VoiceChannelState {
    * @param {GuildMember} member
    */
   public createStream(member: GuildMember | User) {
-    const voiceStream = new VoiceStream(
-      member,
-      this.connection,
-      this.commandHandler
-    );
+    if (this.ignored_users.indexOf(member.id) === -1) {
+      const voiceStream = new VoiceStream(
+        member,
+        this.connection,
+        this.commandHandler
+      );
+    }
   }
 
-  public removeStream(member: GuildMember) {}
-
+  /**
+   * @param {VoiceConnection} connection
+   */
   public handleJoinedChannel(connection: VoiceConnection) {
     connection.channel.members.forEach((member) => {
       this.addConnectedUser(member);
@@ -59,10 +64,16 @@ export class VoiceChannelState {
     });
   }
 
+  /**
+   * @returns {string}
+   */
   public getChannelId(): string {
     return this.channelId;
   }
 
+  /**
+   * @param {string} channelId
+   */
   public setChannelId(channelId: string) {
     this.channelId = channelId;
   }
