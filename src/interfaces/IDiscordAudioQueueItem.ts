@@ -1,10 +1,11 @@
-import { User } from "discord.js";
+import { GuildMember, User } from "discord.js";
 
 export interface IDiscordAudioQueueItem {
   url: string;
-  queued_by?: User;
+  title: string;
   filename?: string;
   queued_at: number;
   timestamp?: number;
   is_playing: boolean;
+  queued_by?: GuildMember | User;
 }

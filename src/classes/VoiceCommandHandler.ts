@@ -29,6 +29,9 @@ export class VoiceCommandHandler {
       case "add_song":
         this.discordClient.handleAddSong(this.client, response);
         break;
+      case "skip_song":
+        this.discordClient.handleSkipSong(this.client, response);
+        break;
     }
   }
 

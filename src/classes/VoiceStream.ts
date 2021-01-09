@@ -3,8 +3,8 @@ import { PassThrough, Writable } from "stream";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { api } from "./WitClient";
-import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
+import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 
 export class VoiceStream {
   private buff: any[];
@@ -67,16 +67,16 @@ export class VoiceStream {
           headers: { "Content-Type": "audio/wav" },
         }
       );
+
       if (returned_value.data.text.length === 0) {
-        console.log("Short");
         return;
-      } else {
-        console.log(returned_value.data.text);
       }
+
+      returned_value.data.issuer = this.member;
 
       await this.commandHandler.handleIncomingCommand(returned_value.data);
     } catch (err) {
-      // console.log(err);
+      console.log(err);
     }
   }
 }
