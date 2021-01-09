@@ -1,11 +1,11 @@
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { VoiceStream } from "./VoiceStream";
+import { shouldExcludeUser } from "../utils/Discord";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 
 export class VoiceChannelState {
   private channelId: string;
-  private ignored_users: string[];
   private connection: VoiceConnection;
   private commandHandler: VoiceCommandHandler;
   private connectedUsers: { [id: string]: GuildMember };
@@ -21,8 +21,6 @@ export class VoiceChannelState {
     this.connection.on("speaking", (user) => {
       this.createStream(user);
     });
-
-    this.ignored_users = process.env.IGNORED_USERS.split(",");
   }
 
   /**
@@ -45,7 +43,7 @@ export class VoiceChannelState {
    * @param {GuildMember} member
    */
   public createStream(member: GuildMember | User) {
-    if (this.ignored_users.indexOf(member.id) === -1) {
+    if (shouldExcludeUser(member.id)) {
       const voiceStream = new VoiceStream(
         member,
         this.connection,

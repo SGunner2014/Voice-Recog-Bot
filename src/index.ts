@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { Client, VoiceChannel, VoiceConnection } from "discord.js";
 
 import { Silence } from "./classes/Silence";
+import { shouldExcludeUser } from "./utils/Discord";
 import { DiscordClient } from "./classes/DiscordClient";
 import { VoiceChannelState } from "./classes/VoiceChannelState";
 import { VoiceCommandHandler } from "./classes/VoiceCommandHandler";
@@ -33,16 +34,21 @@ client.on("ready", async () => {
 
 // On member leave or join voice channel
 client.on("voiceStateUpdate", (oldState, newState) => {
-  setTimeout(() => {
-    if (newState.channel) {
-      // User has connected
-      channelState.addConnectedUser(newState.member);
-      channelState.createStream(newState.member);
-    } else if (oldState.channel) {
-      // User has disconnected
-      channelState.removeConnectedUser(oldState.member);
+  if (newState.channel) {
+    if (shouldExcludeUser(newState.member.id)) {
+      return;
     }
-  }, 600);
+
+    // User has connected
+    channelState.addConnectedUser(newState.member);
+    channelState.createStream(newState.member);
+  } else if (oldState.channel) {
+    if (shouldExcludeUser(oldState.member.id)) {
+      return;
+    }
+    // User has disconnected
+    channelState.removeConnectedUser(oldState.member);
+  }
 });
 
 client.on("guildMemberSpeaking", (member) => {});
