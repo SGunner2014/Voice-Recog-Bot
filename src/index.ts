@@ -3,6 +3,7 @@ import { Silence } from "./classes/Silence";
 import { Client, VoiceChannel, VoiceConnection } from "discord.js";
 import { VoiceChannelState } from "./classes/VoiceChannelState";
 import { VoiceCommandHandler } from "./classes/VoiceCommandHandler";
+import { DiscordClient } from "./classes/DiscordClient";
 
 config();
 const client = new Client();
@@ -19,7 +20,7 @@ client.on("ready", async () => {
 
     channelState = new VoiceChannelState(
       connection,
-      new VoiceCommandHandler(client)
+      new VoiceCommandHandler(client, new DiscordClient(client))
     );
     channelState.setChannelId(process.env.VOICE_CHANNEL);
     connection.play(new Silence(), { type: "opus" });

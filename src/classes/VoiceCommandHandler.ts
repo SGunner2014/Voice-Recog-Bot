@@ -6,9 +6,15 @@ import { IIntentResponse } from "../interfaces/IIntentResponse";
 
 export class VoiceCommandHandler {
   private client: Client;
+  private discordClient: DiscordClient;
 
-  constructor(client: Client) {
+  /**
+   * @param {Client} client
+   * @param {DiscordClient} discordClient
+   */
+  constructor(client: Client, discordClient: DiscordClient) {
     this.client = client;
+    this.discordClient = discordClient;
   }
 
   /**
