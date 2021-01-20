@@ -1,10 +1,12 @@
 import ffmpeg from "fluent-ffmpeg";
-import { PassThrough, Writable } from "stream";
+import { PassThrough, Stream, Writable } from "stream";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { api } from "./WitClient";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
+
+const MIN_BUFFER_LENGTH = 100_000; // Buffer must be at least this long to trigger a call to wit.ai
 
 export class VoiceStream {
   private buff: any[];
@@ -59,6 +61,30 @@ export class VoiceStream {
    */
   private async handleEnd() {
     const inputAudio = Buffer.concat(this.buff);
+
+    const readStream = new Stream.Readable({ read() {} });
+    readStream.push(inputAudio);
+
+    console.log("probing");
+    ffmpeg()
+      .input(readStream)
+      .fromFormat("wav")
+      .ffprobe((err, data) => {
+        console.log("probed");
+        if (err) {
+          console.log(err);
+        } else {
+          console.log(`Duration: ${data.format.duration}`);
+        }
+      });
+
+    if (inputAudio.byteLength < MIN_BUFFER_LENGTH) {
+      console.log(`Buffer rejected: ${inputAudio.byteLength}`);
+      return;
+    } else {
+      console.log(`Buffer accepted: ${inputAudio.byteLength}`);
+    }
+
     try {
       const returned_value = await api.post<ISpeechRequest>(
         "/speech",

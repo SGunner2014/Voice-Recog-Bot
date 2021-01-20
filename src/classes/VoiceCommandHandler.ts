@@ -22,12 +22,13 @@ export class VoiceCommandHandler {
    *
    * @param {ISpeechRequest} response
    */
-  public handleIncomingCommand(response: ISpeechRequest) {
+  public async handleIncomingCommand(response: ISpeechRequest) {
     const intent = this.determineIntent(response);
 
     switch (intent.name) {
       case "add_song":
-        this.discordClient.handleAddSong(this.client, response);
+        await this.discordClient.handleAddSong(this.client, response);
+        await this.discordClient.handleListQueue(this.client);
         break;
       case "skip_song":
         this.discordClient.handleSkipSong(this.client, response);

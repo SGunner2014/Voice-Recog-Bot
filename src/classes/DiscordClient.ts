@@ -5,13 +5,16 @@ import ffmpeg from "fluent-ffmpeg";
 import {
   Client,
   GuildMember,
+  Message,
   StreamDispatcher,
+  TextChannel,
   User,
   VoiceConnection,
 } from "discord.js";
 
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 import { IDiscordAudioQueueItem } from "../interfaces/IDiscordAudioQueueItem";
+import { ITextCommand } from "../interfaces/ITextCommand";
 
 export class DiscordClient {
   private client: Client;
@@ -58,7 +61,27 @@ export class DiscordClient {
       this.currentStream.end(() => {
         console.log("Ended");
       });
+      this.currently_playing = null;
+      this.onQueueSong();
     }
+  }
+
+  public async handleListQueue(client: Client) {
+    const channel = (await client.channels.fetch(
+      "306179748793548800"
+    )) as TextChannel;
+    this.queue.forEach(async (element) => {
+      await channel.send(element.title);
+    });
+  }
+
+  /**
+   * Handles a request to the help command
+   *
+   * @param {ITextCommand} command
+   */
+  public async handleHelp(command: ITextCommand) {
+    await command.message.reply("Hello, world.");
   }
 
   /**
@@ -86,19 +109,19 @@ export class DiscordClient {
   }
 
   private onQueueSong() {
-    if (this.currently_playing === null) {
+    if (this.currently_playing === null && this.queue.length > 0) {
       this.currently_playing = this.queue.shift();
-      this.downloadVideo(this.currently_playing, () => {
-        console.log("Now playing new song");
-        this.playSong(this.currently_playing);
-      });
+      // this.downloadVideo(this.currently_playing, () => {
+      console.log("Now playing new song");
+      this.playSong(this.currently_playing);
       this.currently_playing.is_playing = true;
+      // });
     }
   }
 
   /**
-   * @param video
-   * @param callback
+   * @param {IDiscordAudioQueueItem} video
+   * @param {() => any} callback
    */
   private downloadVideo(video: IDiscordAudioQueueItem, callback: () => any) {
     const stream = ytdl(video.url, { quality: "highestaudio" });
@@ -119,21 +142,18 @@ export class DiscordClient {
    */
   private playSong(queuedItem: IDiscordAudioQueueItem) {
     this.currentStream = this.connection
-      .play(`${process.env.DOWNLOAD_DIR}/${queuedItem.filename}`)
+      .play(ytdl(queuedItem.url, { quality: "highestaudio" }))
       .on("start", () => {
         // Set custom status
         this.client.user.setPresence({
           activity: { name: `'${queuedItem.title}'`, type: "PLAYING" },
         });
       })
+      .on("end", () => {
+        this.currently_playing = null;
+      })
       .on("finish", () => {
         console.log("Ended");
-        fs.unlink(
-          `${process.env.DOWNLOAD_DIR}/${queuedItem.filename}`,
-          () => {}
-        );
-        this.currently_playing = null;
-        this.client.user.setPresence(null);
       });
   }
 }
