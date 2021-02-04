@@ -25,7 +25,7 @@ export class VoiceCommandHandler {
   public async handleIncomingCommand(response: ISpeechRequest) {
     const intent = this.determineIntent(response);
 
-    switch (intent.name) {
+    switch (intent?.name) {
       case "add_song":
         await this.discordClient.handleAddSong(this.client, response);
         await this.discordClient.handleListQueue(this.client);

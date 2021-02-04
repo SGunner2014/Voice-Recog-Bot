@@ -6,7 +6,9 @@ import { api } from "./WitClient";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 
-const MIN_BUFFER_LENGTH = 100_000; // Buffer must be at least this long to trigger a call to wit.ai
+const AUDIO_BITRATE = 16_000;
+const MIN_SAMPLE_LENGTH = 2; // 2s
+const MAX_SAMPLE_LENGTH = 10;
 
 export class VoiceStream {
   private buff: any[];
@@ -61,28 +63,16 @@ export class VoiceStream {
    */
   private async handleEnd() {
     const inputAudio = Buffer.concat(this.buff);
+    const sampleLength = this.estimateSampleLength(inputAudio);
 
-    const readStream = new Stream.Readable({ read() {} });
-    readStream.push(inputAudio);
-
-    console.log("probing");
-    ffmpeg()
-      .input(readStream)
-      .fromFormat("wav")
-      .ffprobe((err, data) => {
-        console.log("probed");
-        if (err) {
-          console.log(err);
-        } else {
-          console.log(`Duration: ${data.format.duration}`);
-        }
-      });
-
-    if (inputAudio.byteLength < MIN_BUFFER_LENGTH) {
-      console.log(`Buffer rejected: ${inputAudio.byteLength}`);
+    // Discard any clips not of sufficient length
+    if (sampleLength < MIN_SAMPLE_LENGTH) {
       return;
-    } else {
-      console.log(`Buffer accepted: ${inputAudio.byteLength}`);
+    }
+
+    // Discard any samples that are too long
+    if (sampleLength > MAX_SAMPLE_LENGTH) {
+      return;
     }
 
     try {
@@ -102,7 +92,17 @@ export class VoiceStream {
 
       await this.commandHandler.handleIncomingCommand(returned_value.data);
     } catch (err) {
-      console.log(err);
+      //
     }
+  }
+
+  /**
+   * Gives a rough estimate of the sample length (in seconds)
+   *
+   * @param {Buffer} sample
+   * @returns {number}
+   */
+  private estimateSampleLength(sample: Buffer): number {
+    return (sample.byteLength * 8) / AUDIO_BITRATE / 60;
   }
 }
