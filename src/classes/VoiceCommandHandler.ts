@@ -6,9 +6,15 @@ import { IIntentResponse } from "../interfaces/IIntentResponse";
 
 export class VoiceCommandHandler {
   private client: Client;
+  private discordClient: DiscordClient;
 
-  constructor(client: Client) {
+  /**
+   * @param {Client} client
+   * @param {DiscordClient} discordClient
+   */
+  constructor(client: Client, discordClient: DiscordClient) {
     this.client = client;
+    this.discordClient = discordClient;
   }
 
   /**
@@ -16,12 +22,16 @@ export class VoiceCommandHandler {
    *
    * @param {ISpeechRequest} response
    */
-  public handleIncomingCommand(response: ISpeechRequest) {
+  public async handleIncomingCommand(response: ISpeechRequest) {
     const intent = this.determineIntent(response);
 
-    switch (intent.name) {
+    switch (intent?.name) {
       case "add_song":
-        DiscordClient.handleAddSong(this.client, response);
+        await this.discordClient.handleAddSong(this.client, response);
+        await this.discordClient.handleListQueue(this.client);
+        break;
+      case "skip_song":
+        this.discordClient.handleSkipSong(this.client, response);
         break;
     }
   }

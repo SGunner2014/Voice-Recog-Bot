@@ -1,6 +1,7 @@
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { VoiceStream } from "./VoiceStream";
+import { shouldExcludeUser } from "../utils/Discord";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 
 export class VoiceChannelState {
@@ -8,7 +9,6 @@ export class VoiceChannelState {
   private connection: VoiceConnection;
   private commandHandler: VoiceCommandHandler;
   private connectedUsers: { [id: string]: GuildMember };
-  private connectedStreams: { [id: string]: VoiceStream };
 
   constructor(
     connection: VoiceConnection,
@@ -43,15 +43,18 @@ export class VoiceChannelState {
    * @param {GuildMember} member
    */
   public createStream(member: GuildMember | User) {
-    const voiceStream = new VoiceStream(
-      member,
-      this.connection,
-      this.commandHandler
-    );
+    if (shouldExcludeUser(member.id)) {
+      const voiceStream = new VoiceStream(
+        member,
+        this.connection,
+        this.commandHandler
+      );
+    }
   }
 
-  public removeStream(member: GuildMember) {}
-
+  /**
+   * @param {VoiceConnection} connection
+   */
   public handleJoinedChannel(connection: VoiceConnection) {
     connection.channel.members.forEach((member) => {
       this.addConnectedUser(member);
@@ -59,10 +62,16 @@ export class VoiceChannelState {
     });
   }
 
+  /**
+   * @returns {string}
+   */
   public getChannelId(): string {
     return this.channelId;
   }
 
+  /**
+   * @param {string} channelId
+   */
   public setChannelId(channelId: string) {
     this.channelId = channelId;
   }

@@ -1,10 +1,14 @@
 import ffmpeg from "fluent-ffmpeg";
-import { PassThrough, Writable } from "stream";
+import { PassThrough, Stream, Writable } from "stream";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { api } from "./WitClient";
-import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
+import { ISpeechRequest } from "../interfaces/ISpeechRequest";
+
+const AUDIO_BITRATE = 16_000;
+const MIN_SAMPLE_LENGTH = 2; // 2s
+const MAX_SAMPLE_LENGTH = 10;
 
 export class VoiceStream {
   private buff: any[];
@@ -59,6 +63,18 @@ export class VoiceStream {
    */
   private async handleEnd() {
     const inputAudio = Buffer.concat(this.buff);
+    const sampleLength = this.estimateSampleLength(inputAudio);
+
+    // Discard any clips not of sufficient length
+    if (sampleLength < MIN_SAMPLE_LENGTH) {
+      return;
+    }
+
+    // Discard any samples that are too long
+    if (sampleLength > MAX_SAMPLE_LENGTH) {
+      return;
+    }
+
     try {
       const returned_value = await api.post<ISpeechRequest>(
         "/speech",
@@ -67,16 +83,26 @@ export class VoiceStream {
           headers: { "Content-Type": "audio/wav" },
         }
       );
+
       if (returned_value.data.text.length === 0) {
-        console.log("Short");
         return;
-      } else {
-        console.log(returned_value.data.text);
       }
+
+      returned_value.data.issuer = this.member;
 
       await this.commandHandler.handleIncomingCommand(returned_value.data);
     } catch (err) {
-      // console.log(err);
+      //
     }
+  }
+
+  /**
+   * Gives a rough estimate of the sample length (in seconds)
+   *
+   * @param {Buffer} sample
+   * @returns {number}
+   */
+  private estimateSampleLength(sample: Buffer): number {
+    return (sample.byteLength * 8) / AUDIO_BITRATE / 60;
   }
 }
