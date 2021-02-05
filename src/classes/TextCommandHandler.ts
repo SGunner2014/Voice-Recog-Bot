@@ -2,11 +2,11 @@ import { Client, Message } from "discord.js";
 
 import { DiscordClient } from "./DiscordClient";
 import { Command } from "./TextCommands/Command";
-import { ITextCommand } from "../interfaces/ITextCommand";
+import { HelpCommand } from "./TextCommands/HelpCommand";
 import { HelloCommand } from "./TextCommands/HelloCommand";
+import { QueueCommand } from "./TextCommands/QueueCommand";
 import { UptimeCommand } from "./TextCommands/UptimeCommand";
 import { DisconnectCommand } from "./TextCommands/DisconnectCommand";
-import { HelpCommand } from "./TextCommands/HelpCommand";
 
 export class TextCommandHandler {
   private client: Client;
@@ -20,11 +20,12 @@ export class TextCommandHandler {
 
     this.commands.push(new HelpCommand());
     this.commands.push(new HelloCommand());
+    this.commands.push(new QueueCommand());
     this.commands.push(new UptimeCommand());
     this.commands.push(new DisconnectCommand());
 
     this.commands.forEach((command, index) => {
-      command.onCommandInit(this.commands);
+      command.onCommandInit(this.commands, discordClient);
     });
   }
 

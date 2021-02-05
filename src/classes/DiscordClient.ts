@@ -9,7 +9,6 @@ import {
   VoiceConnection,
 } from "discord.js";
 
-import { ITextCommand } from "../interfaces/ITextCommand";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 import { IDiscordAudioQueueItem } from "../interfaces/IDiscordAudioQueueItem";
 
@@ -42,9 +41,28 @@ export class DiscordClient {
     this.queueSong(
       client,
       result.videos[0].url,
-      request.issuer,
-      result.videos[0].title
+      result.videos[0].title,
+      request.issuer
     );
+  }
+
+  /**
+   * Queues a new song
+   *
+   * @param {string} searchTerm
+   * @param {User | GuildMember} member
+   */
+  public addSong(searchTerm: string, member?: User | GuildMember) {
+    search(searchTerm)
+      .then((result) => {
+        this.queueSong(
+          this.client,
+          result.videos[0].url,
+          result.videos[0].title,
+          member
+        );
+      })
+      .catch(() => {});
   }
 
   /**
@@ -53,15 +71,16 @@ export class DiscordClient {
    * @param {Client} client
    * @param {ISpeechRequest} request
    */
-  public async handleSkipSong(client: Client, request: ISpeechRequest) {
+  public handleSkipSong(client: Client, request: ISpeechRequest) {
     if (this.currently_playing !== null) {
-      console.log("Ending stream");
-      this.currentStream.end(() => {
-        console.log("Ended");
-      });
+      this.currentStream.end(() => {});
       this.currently_playing = null;
       this.onQueueSong();
     }
+  }
+
+  public skipSong() {
+    this.handleSkipSong(this.client, null);
   }
 
   public async handleListQueue(client: Client) {
@@ -73,13 +92,8 @@ export class DiscordClient {
     });
   }
 
-  /**
-   * Handles a request to the help command
-   *
-   * @param {ITextCommand} command
-   */
-  public async handleHelp(command: ITextCommand) {
-    await command.message.reply("Hello, world.");
+  public getQueue(): IDiscordAudioQueueItem[] {
+    return this.queue;
   }
 
   /**
@@ -89,8 +103,8 @@ export class DiscordClient {
   public queueSong(
     client: Client,
     url: string,
-    requester: GuildMember | User,
-    title: string
+    title: string,
+    requester?: GuildMember | User
   ) {
     // Queue song here
     console.log(`Received request to queue song: ${url}`);
@@ -126,11 +140,10 @@ export class DiscordClient {
           activity: { name: `'${queuedItem.title}'`, type: "PLAYING" },
         });
       })
-      .on("end", () => {
-        this.currently_playing = null;
-      })
+      .on("end", () => {})
       .on("finish", () => {
-        console.log("Ended");
+        this.currently_playing = null;
+        this.onQueueSong();
       });
   }
 }

@@ -28,7 +28,6 @@ export class VoiceCommandHandler {
     switch (intent?.name) {
       case "add_song":
         await this.discordClient.handleAddSong(this.client, response);
-        await this.discordClient.handleListQueue(this.client);
         break;
       case "skip_song":
         this.discordClient.handleSkipSong(this.client, response);
