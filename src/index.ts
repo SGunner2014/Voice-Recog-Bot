@@ -56,7 +56,7 @@ client.on("voiceStateUpdate", (oldState, newState) => {
       // User has disconnected
       channelState.removeConnectedUser(oldState.member);
     }
-  }, 600);
+  }, 1000);
 });
 
 // On message send

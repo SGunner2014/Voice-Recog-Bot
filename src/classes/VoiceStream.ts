@@ -7,7 +7,7 @@ import { VoiceCommandHandler } from "./VoiceCommandHandler";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 
 const AUDIO_BITRATE = 16_000;
-const MIN_SAMPLE_LENGTH = 2; // 2s
+const MIN_SAMPLE_LENGTH = 1; // 2s
 const MAX_SAMPLE_LENGTH = 10;
 
 export class VoiceStream {

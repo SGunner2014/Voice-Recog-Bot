@@ -1,20 +1,17 @@
-import fs from "fs";
 import ytdl from "ytdl-core";
 import { search } from "yt-search";
-import ffmpeg from "fluent-ffmpeg";
 import {
   Client,
   GuildMember,
-  Message,
   StreamDispatcher,
   TextChannel,
   User,
   VoiceConnection,
 } from "discord.js";
 
+import { ITextCommand } from "../interfaces/ITextCommand";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 import { IDiscordAudioQueueItem } from "../interfaces/IDiscordAudioQueueItem";
-import { ITextCommand } from "../interfaces/ITextCommand";
 
 export class DiscordClient {
   private client: Client;
@@ -25,6 +22,7 @@ export class DiscordClient {
 
   /**
    * @param {Client} client
+   * @param {VoiceConnection} connection
    */
   constructor(client: Client, connection: VoiceConnection) {
     this.queue = [];

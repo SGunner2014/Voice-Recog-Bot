@@ -1008,7 +1008,7 @@ https-proxy-agent@^5.0.0:
     agent-base "6"
     debug "4"
 
-human-time@0.0.2:
+human-time@0.0.2, human-time@^0.0.2:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/human-time/-/human-time-0.0.2.tgz#566d04452ef5c24755c465b7b50fa103c41306c9"
   integrity sha512-sbYI90YhYmstslPTb70BLGjy6mdESa0lxL7uDR4fIVAx9Iobz8fLEqi7FqF4Q/6vblrzZALg//MsYJlIPBU8SA==
