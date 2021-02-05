@@ -111,30 +111,9 @@ export class DiscordClient {
   private onQueueSong() {
     if (this.currently_playing === null && this.queue.length > 0) {
       this.currently_playing = this.queue.shift();
-      // this.downloadVideo(this.currently_playing, () => {
-      console.log("Now playing new song");
       this.playSong(this.currently_playing);
       this.currently_playing.is_playing = true;
-      // });
     }
-  }
-
-  /**
-   * @param {IDiscordAudioQueueItem} video
-   * @param {() => any} callback
-   */
-  private downloadVideo(video: IDiscordAudioQueueItem, callback: () => any) {
-    const stream = ytdl(video.url, { quality: "highestaudio" });
-    ffmpeg(stream)
-      .audioBitrate(256)
-      .save(`${process.env.DOWNLOAD_DIR}/${video.filename}`)
-      .on("progress", (p) => {})
-      .on("end", () => {
-        console.log(
-          `File downloaded: ${process.env.DOWNLOAD_DIR}/${video.filename}`
-        );
-        callback();
-      });
   }
 
   /**
