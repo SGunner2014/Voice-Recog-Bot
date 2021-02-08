@@ -36,7 +36,7 @@ export class DiscordClient {
    * @param {ISpeechRequest} request
    */
   public async handleAddSong(client: Client, request: ISpeechRequest) {
-    const searchTerm = request.entities["play_song:play_song"][0];
+    const searchTerm = request.entities["Song_Name:Song_Name"][0];
     const result = await search(searchTerm.body);
     this.queueSong(
       client,
@@ -74,8 +74,7 @@ export class DiscordClient {
   public handleSkipSong(client: Client, request: ISpeechRequest) {
     if (this.currently_playing !== null) {
       this.currentStream.end(() => {});
-      this.currently_playing = null;
-      this.onQueueSong();
+      this.onSongEnd();
     }
   }
 
@@ -128,6 +127,12 @@ export class DiscordClient {
     }
   }
 
+  private onSongEnd() {
+    this.currently_playing = null;
+    // clear presence here
+    this.onQueueSong();
+  }
+
   /**
    * @param {IDiscordAudioQueueItem} queuedItem
    */
@@ -142,8 +147,7 @@ export class DiscordClient {
       })
       .on("end", () => {})
       .on("finish", () => {
-        this.currently_playing = null;
-        this.onQueueSong();
+        this.onSongEnd();
       });
   }
 }

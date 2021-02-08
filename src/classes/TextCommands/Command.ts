@@ -5,6 +5,7 @@ import { DiscordClient } from "../DiscordClient";
 export abstract class Command {
   abstract getName(): string;
   abstract getAliases(): string[];
+  abstract getCommandAliases(): string[];
 
   abstract onCommandCall(parsed: string[], message: Message);
   abstract onCommandHelp(parsed: string[], message: Message);

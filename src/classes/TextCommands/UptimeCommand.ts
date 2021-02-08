@@ -12,6 +12,9 @@ export class UptimeCommand extends Command {
   getAliases(): string[] {
     return [];
   }
+  getCommandAliases(): string[] {
+    return [];
+  }
   onCommandCall(parsed: string[], message: Message) {
     const currentTime = new Date().getTime() / 1000;
     const timeDifference = currentTime - this.initTime.getTime() / 1000;

@@ -11,6 +11,9 @@ export class HelpCommand extends Command {
   getAliases(): string[] {
     return [];
   }
+  getCommandAliases(): string[] {
+    return [];
+  }
   onCommandCall(parsed: string[], message: Message) {
     if (parsed.length > 1) {
       this.handleCommandHelp(parsed, message);

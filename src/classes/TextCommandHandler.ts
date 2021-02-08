@@ -38,7 +38,11 @@ export class TextCommandHandler {
     if (message.content.startsWith(process.env.TEXT_COMMAND_TRIGGER)) {
       const args = message.content.toLowerCase().slice(1).split(" ");
       this.commands.every((command, index) => {
-        if (command.getName() === args[0] || args[0] in command.getAliases()) {
+        if (
+          command.getName() === args[0] ||
+          command.getAliases().includes(args[0]) ||
+          command.getCommandAliases().includes(args[0])
+        ) {
           command.onCommandCall(args, message);
           return false;
         } else {

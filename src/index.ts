@@ -1,4 +1,6 @@
 import { config } from "dotenv";
+import bugsnag from "@bugsnag/js";
+import { SpeechClient } from "@google-cloud/speech";
 import { Client, VoiceChannel, VoiceConnection } from "discord.js";
 
 import { Silence } from "./classes/Silence";
@@ -9,7 +11,11 @@ import { TextCommandHandler } from "./classes/TextCommandHandler";
 import { VoiceCommandHandler } from "./classes/VoiceCommandHandler";
 
 config();
+bugsnag.start({ apiKey: process.env.BUGSNAG_KEY });
+
 const client = new Client();
+const googleClient = new SpeechClient();
+
 let channelState: VoiceChannelState;
 let textHandler: TextCommandHandler;
 
@@ -26,6 +32,7 @@ client.on("ready", async () => {
 
     channelState = new VoiceChannelState(
       connection,
+      googleClient,
       new VoiceCommandHandler(client, discordClient)
     );
     channelState.setChannelId(process.env.VOICE_CHANNEL);

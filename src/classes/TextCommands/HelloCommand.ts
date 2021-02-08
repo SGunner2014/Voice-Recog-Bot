@@ -13,6 +13,10 @@ export class HelloCommand extends Command {
     return [];
   }
 
+  getCommandAliases(): string[] {
+    return [];
+  }
+
   /**
    * @param {string[]} parsed
    * @param {Message} message

@@ -8,5 +8,5 @@ export interface ISpeechRequest {
   text: string;
   issuer?: GuildMember | User;
   intents: IIntentResponse[];
-  entities: { ["play_song:play_song"]: ISpeechEntity[] };
+  entities: { ["Song_Name:Song_Name"]: ISpeechEntity[] };
 }

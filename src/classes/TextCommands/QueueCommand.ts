@@ -17,26 +17,35 @@ export class QueueCommand extends Command {
     return ["playlist", "music", "audio"];
   }
 
+  getCommandAliases(): string[] {
+    return ["play", "skip", "list"];
+  }
+
   /**
    * @param {string[]} parsed
    * @param {Message} message
    */
   onCommandCall(parsed: string[], message: Message) {
-    if (parsed.length > 1) {
-      switch (parsed[1]) {
-        case "skip":
-          this.handleSkipSong(parsed, message);
-          break;
-        case "play":
-          this.handleQueueSong(parsed, message);
-          break;
-        case "list":
-          this.handleListQueue(parsed, message);
-          break;
-        case "remove":
-          this.handleRemoveItem(parsed, message);
-          break;
+    if (this.getAliases().includes(parsed[0]) || parsed[0] === this.getName()) {
+      if (parsed.length > 1) {
+        switch (parsed[1]) {
+          case "skip":
+            this.handleSkipSong(parsed, message);
+            break;
+          case "play":
+            this.handleQueueSong(parsed, message);
+            break;
+          case "list":
+            this.handleListQueue(parsed, message);
+            break;
+          case "remove":
+            this.handleRemoveItem(parsed, message);
+            break;
+        }
       }
+    } else if (this.getCommandAliases().includes(parsed[0])) {
+      // Allow for assigning simple aliases to sub-commands
+      this.onCommandCall(["queue", ...parsed], message);
     }
   }
 

@@ -1,10 +1,12 @@
 import ffmpeg from "fluent-ffmpeg";
+import { SpeechClient } from "@google-cloud/speech";
 import { PassThrough, Stream, Writable } from "stream";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { api } from "./WitClient";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
+import { IMessageRequest } from "../interfaces/IMessageRequest";
 
 const AUDIO_BITRATE = 16_000;
 const MIN_SAMPLE_LENGTH = 1; // 2s
@@ -13,6 +15,7 @@ const MAX_SAMPLE_LENGTH = 10;
 export class VoiceStream {
   private buff: any[];
   private member: GuildMember | User;
+  private googleClient: SpeechClient;
   private commandHandler: VoiceCommandHandler;
   private audioStream: Writable | PassThrough;
 
@@ -23,10 +26,12 @@ export class VoiceStream {
   constructor(
     member: GuildMember | User,
     connection: VoiceConnection,
-    commandHandler: VoiceCommandHandler
+    commandHandler: VoiceCommandHandler,
+    googleClient: SpeechClient
   ) {
     this.member = member;
     this.commandHandler = commandHandler;
+    this.googleClient = googleClient;
     this.audioStream = ffmpeg(
       connection.receiver.createStream(member, {
         mode: "pcm",
@@ -75,25 +80,41 @@ export class VoiceStream {
       return;
     }
 
-    try {
-      const returned_value = await api.post<ISpeechRequest>(
-        "/speech",
-        inputAudio,
-        {
-          headers: { "Content-Type": "audio/wav" },
-        }
-      );
+    const results = (
+      await this.googleClient.recognize({
+        audio: { content: inputAudio },
+        config: {
+          encoding: "LINEAR16",
+          languageCode: "en-GB",
+        },
+      })
+    )[0].results?.[0].alternatives?.[0].transcript;
 
-      if (returned_value.data.text.length === 0) {
-        return;
-      }
+    console.log(JSON.stringify(results));
 
-      returned_value.data.issuer = this.member;
-
-      await this.commandHandler.handleIncomingCommand(returned_value.data);
-    } catch (err) {
-      //
+    if (results === null) {
+      return;
     }
+
+    const returned_value = await api.get<IMessageRequest>("/message", {
+      data: { q: results },
+    });
+
+    // const returned_value = await api.post<ISpeechRequest>(
+    //   "/speech",
+    //   inputAudio,
+    //   {
+    //     headers: { "Content-Type": "audio/wav" },
+    //   }
+    // );
+
+    if (returned_value.data.text.length === 0) {
+      return;
+    }
+
+    returned_value.data.issuer = this.member;
+
+    await this.commandHandler.handleIncomingCommand(returned_value.data);
   }
 
   /**

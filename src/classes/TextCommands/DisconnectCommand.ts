@@ -9,6 +9,9 @@ export class DisconnectCommand extends Command {
   getAliases(): string[] {
     return [];
   }
+  getCommandAliases(): string[] {
+    return [];
+  }
   onCommandCall(parsed: string[], message: Message) {
     message.channel.send("NYI");
   }
