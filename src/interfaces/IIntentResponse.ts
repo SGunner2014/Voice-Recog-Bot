@@ -1,5 +1,5 @@
 export interface IIntentResponse {
   id: string;
-  name: "add_song" | "skip_song";
   confidence: number;
+  name: "Play_Song" | "Skip_Song";
 }

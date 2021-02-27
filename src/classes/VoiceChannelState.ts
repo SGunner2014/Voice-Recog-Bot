@@ -1,3 +1,4 @@
+import { SpeechClient } from "@google-cloud/speech";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { VoiceStream } from "./VoiceStream";
@@ -7,15 +8,18 @@ import { VoiceCommandHandler } from "./VoiceCommandHandler";
 export class VoiceChannelState {
   private channelId: string;
   private connection: VoiceConnection;
+  private googleClient: SpeechClient;
   private commandHandler: VoiceCommandHandler;
   private connectedUsers: { [id: string]: GuildMember };
 
   constructor(
     connection: VoiceConnection,
+    googleClient: SpeechClient,
     commandHandler: VoiceCommandHandler
   ) {
     this.connectedUsers = {};
     this.connection = connection;
+    this.googleClient = googleClient;
     this.commandHandler = commandHandler;
 
     this.connection.on("speaking", (user) => {
@@ -47,7 +51,8 @@ export class VoiceChannelState {
       const voiceStream = new VoiceStream(
         member,
         this.connection,
-        this.commandHandler
+        this.commandHandler,
+        this.googleClient
       );
     }
   }

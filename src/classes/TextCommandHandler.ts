@@ -1,15 +1,32 @@
 import { Client, Message } from "discord.js";
 
 import { DiscordClient } from "./DiscordClient";
-import { ITextCommand } from "../interfaces/ITextCommand";
+import { Command } from "./TextCommands/Command";
+import { HelpCommand } from "./TextCommands/HelpCommand";
+import { HelloCommand } from "./TextCommands/HelloCommand";
+import { QueueCommand } from "./TextCommands/QueueCommand";
+import { UptimeCommand } from "./TextCommands/UptimeCommand";
+import { DisconnectCommand } from "./TextCommands/DisconnectCommand";
 
 export class TextCommandHandler {
   private client: Client;
+  private commands: Command[];
   private discordClient: DiscordClient;
 
   constructor(client: Client, discordClient: DiscordClient) {
+    this.commands = [];
     this.client = client;
     this.discordClient = discordClient;
+
+    this.commands.push(new HelpCommand());
+    this.commands.push(new HelloCommand());
+    this.commands.push(new QueueCommand());
+    this.commands.push(new UptimeCommand());
+    this.commands.push(new DisconnectCommand());
+
+    this.commands.forEach((command, index) => {
+      command.onCommandInit(this.commands, discordClient);
+    });
   }
 
   /**
@@ -19,17 +36,19 @@ export class TextCommandHandler {
    */
   public handleIncomingMessage(message: Message) {
     if (message.content.startsWith(process.env.TEXT_COMMAND_TRIGGER)) {
-      const args = message.content.slice(1).split(" ");
-    }
-  }
-
-  /**
-   * Handles an incoming text command and passes it to the relevant handler
-   *
-   * @param {ITextCommand} command
-   */
-  private handleIncomingCommand(command: ITextCommand) {
-    switch (command.command) {
+      const args = message.content.toLowerCase().slice(1).split(" ");
+      this.commands.every((command, index) => {
+        if (
+          command.getName() === args[0] ||
+          command.getAliases().includes(args[0]) ||
+          command.getCommandAliases().includes(args[0])
+        ) {
+          command.onCommandCall(args, message);
+          return false;
+        } else {
+          return true;
+        }
+      });
     }
   }
 }

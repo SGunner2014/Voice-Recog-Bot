@@ -1,18 +1,20 @@
 import ffmpeg from "fluent-ffmpeg";
-import { PassThrough, Stream, Writable } from "stream";
+import { SpeechClient } from "@google-cloud/speech";
+import { PassThrough, Writable } from "stream";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
-import { api } from "./WitClient";
+import { EIntent } from "../enums/EIntent";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 
 const AUDIO_BITRATE = 16_000;
-const MIN_SAMPLE_LENGTH = 2; // 2s
+const MIN_SAMPLE_LENGTH = 1; // 2s
 const MAX_SAMPLE_LENGTH = 10;
 
 export class VoiceStream {
   private buff: any[];
   private member: GuildMember | User;
+  private googleClient: SpeechClient;
   private commandHandler: VoiceCommandHandler;
   private audioStream: Writable | PassThrough;
 
@@ -23,10 +25,12 @@ export class VoiceStream {
   constructor(
     member: GuildMember | User,
     connection: VoiceConnection,
-    commandHandler: VoiceCommandHandler
+    commandHandler: VoiceCommandHandler,
+    googleClient: SpeechClient
   ) {
     this.member = member;
     this.commandHandler = commandHandler;
+    this.googleClient = googleClient;
     this.audioStream = ffmpeg(
       connection.receiver.createStream(member, {
         mode: "pcm",
@@ -62,37 +66,71 @@ export class VoiceStream {
    * Invoked when the user finishes speaking
    */
   private async handleEnd() {
-    const inputAudio = Buffer.concat(this.buff);
-    const sampleLength = this.estimateSampleLength(inputAudio);
-
-    // Discard any clips not of sufficient length
-    if (sampleLength < MIN_SAMPLE_LENGTH) {
-      return;
-    }
-
-    // Discard any samples that are too long
-    if (sampleLength > MAX_SAMPLE_LENGTH) {
-      return;
-    }
-
     try {
-      const returned_value = await api.post<ISpeechRequest>(
-        "/speech",
-        inputAudio,
-        {
-          headers: { "Content-Type": "audio/wav" },
-        }
-      );
+      const inputAudio = Buffer.concat(this.buff);
+      const sampleLength = this.estimateSampleLength(inputAudio);
 
-      if (returned_value.data.text.length === 0) {
+      // Discard any clips not of sufficient length
+      if (sampleLength < MIN_SAMPLE_LENGTH) {
         return;
       }
 
-      returned_value.data.issuer = this.member;
+      // Discard any samples that are too long
+      if (sampleLength > MAX_SAMPLE_LENGTH) {
+        return;
+      }
 
-      await this.commandHandler.handleIncomingCommand(returned_value.data);
-    } catch (err) {
-      //
+      let results = (
+        await this.googleClient.recognize({
+          audio: { content: inputAudio },
+          config: {
+            encoding: "LINEAR16",
+            languageCode: "en-GB",
+          },
+        })
+      )[0]?.results?.[0]?.alternatives?.[0]?.transcript;
+
+      if (results === null || results === undefined) {
+        return;
+      }
+
+      if (
+        !results
+          .toLowerCase()
+          .startsWith(process.env.TRIGGER_WORD.toLowerCase())
+      ) {
+        return;
+      }
+
+      results = results.substring(process.env.TRIGGER_WORD.length + 1); // remove the trigger word
+      console.log(`results: ${results}`);
+
+      const toProcess = this.determineIntent(results);
+
+      await this.commandHandler.handleIncomingCommand(toProcess);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  private determineIntent(results: string): ISpeechRequest {
+    const command = results.split(" ")[0];
+
+    switch (command) {
+      case "play":
+        return {
+          intent: EIntent.PLAY_SONG,
+          entities: [results.substring(command.length + 1)],
+          text: results,
+        };
+      case "skip":
+        return {
+          intent: EIntent.SKIP_SONG,
+          entities: [],
+          text: results,
+        };
+      default:
+        return { intent: EIntent.UNKNOWN, entities: [], text: results };
     }
   }
 
