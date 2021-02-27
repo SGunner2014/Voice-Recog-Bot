@@ -1,12 +1,10 @@
 import { GuildMember, User } from "discord.js";
 
-import { ISpeechEntity } from "./ISpeechEntity";
-import { IIntentResponse } from "./IIntentResponse";
+import { EIntent } from "../enums/EIntent";
 
 export interface ISpeechRequest {
-  traits: any;
   text: string;
+  intent: EIntent;
+  entities: string[];
   issuer?: GuildMember | User;
-  intents: IIntentResponse[];
-  entities: { ["Song_Name:Song_Name"]: ISpeechEntity[] };
 }

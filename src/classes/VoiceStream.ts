@@ -1,12 +1,11 @@
 import ffmpeg from "fluent-ffmpeg";
 import { SpeechClient } from "@google-cloud/speech";
-import { PassThrough, Stream, Writable } from "stream";
+import { PassThrough, Writable } from "stream";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
-import { api } from "./WitClient";
+import { EIntent } from "../enums/EIntent";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
-import { IMessageRequest } from "../interfaces/IMessageRequest";
 
 const AUDIO_BITRATE = 16_000;
 const MIN_SAMPLE_LENGTH = 1; // 2s
@@ -67,54 +66,72 @@ export class VoiceStream {
    * Invoked when the user finishes speaking
    */
   private async handleEnd() {
-    const inputAudio = Buffer.concat(this.buff);
-    const sampleLength = this.estimateSampleLength(inputAudio);
+    try {
+      const inputAudio = Buffer.concat(this.buff);
+      const sampleLength = this.estimateSampleLength(inputAudio);
 
-    // Discard any clips not of sufficient length
-    if (sampleLength < MIN_SAMPLE_LENGTH) {
-      return;
+      // Discard any clips not of sufficient length
+      if (sampleLength < MIN_SAMPLE_LENGTH) {
+        return;
+      }
+
+      // Discard any samples that are too long
+      if (sampleLength > MAX_SAMPLE_LENGTH) {
+        return;
+      }
+
+      let results = (
+        await this.googleClient.recognize({
+          audio: { content: inputAudio },
+          config: {
+            encoding: "LINEAR16",
+            languageCode: "en-GB",
+          },
+        })
+      )[0]?.results?.[0]?.alternatives?.[0]?.transcript;
+
+      if (results === null || results === undefined) {
+        return;
+      }
+
+      if (
+        !results
+          .toLowerCase()
+          .startsWith(process.env.TRIGGER_WORD.toLowerCase())
+      ) {
+        return;
+      }
+
+      results = results.substring(process.env.TRIGGER_WORD.length + 1); // remove the trigger word
+      console.log(`results: ${results}`);
+
+      const toProcess = this.determineIntent(results);
+
+      await this.commandHandler.handleIncomingCommand(toProcess);
+    } catch (e) {
+      console.log(e);
     }
+  }
 
-    // Discard any samples that are too long
-    if (sampleLength > MAX_SAMPLE_LENGTH) {
-      return;
+  private determineIntent(results: string): ISpeechRequest {
+    const command = results.split(" ")[0];
+
+    switch (command) {
+      case "play":
+        return {
+          intent: EIntent.PLAY_SONG,
+          entities: [results.substring(command.length + 1)],
+          text: results,
+        };
+      case "skip":
+        return {
+          intent: EIntent.SKIP_SONG,
+          entities: [],
+          text: results,
+        };
+      default:
+        return { intent: EIntent.UNKNOWN, entities: [], text: results };
     }
-
-    const results = (
-      await this.googleClient.recognize({
-        audio: { content: inputAudio },
-        config: {
-          encoding: "LINEAR16",
-          languageCode: "en-GB",
-        },
-      })
-    )[0].results?.[0].alternatives?.[0].transcript;
-
-    console.log(JSON.stringify(results));
-
-    if (results === null) {
-      return;
-    }
-
-    const returned_value = await api.get<IMessageRequest>("/message", {
-      data: { q: results },
-    });
-
-    // const returned_value = await api.post<ISpeechRequest>(
-    //   "/speech",
-    //   inputAudio,
-    //   {
-    //     headers: { "Content-Type": "audio/wav" },
-    //   }
-    // );
-
-    if (returned_value.data.text.length === 0) {
-      return;
-    }
-
-    returned_value.data.issuer = this.member;
-
-    await this.commandHandler.handleIncomingCommand(returned_value.data);
   }
 
   /**

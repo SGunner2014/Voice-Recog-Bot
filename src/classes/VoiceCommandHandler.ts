@@ -1,8 +1,8 @@
 import { Client } from "discord.js";
 
+import { EIntent } from "../enums/EIntent";
 import { DiscordClient } from "./DiscordClient";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
-import { IIntentResponse } from "../interfaces/IIntentResponse";
 
 export class VoiceCommandHandler {
   private client: Client;
@@ -23,30 +23,13 @@ export class VoiceCommandHandler {
    * @param {ISpeechRequest} response
    */
   public async handleIncomingCommand(response: ISpeechRequest) {
-    const intent = this.determineIntent(response);
-
-    switch (intent?.name) {
-      case "Play_Song":
+    switch (response.intent) {
+      case EIntent.PLAY_SONG:
         await this.discordClient.handleAddSong(this.client, response);
         break;
-      case "Skip_Song":
+      case EIntent.SKIP_SONG:
         this.discordClient.handleSkipSong(this.client, response);
         break;
     }
-  }
-
-  /**
-   * @param {ISpeechRequest} response
-   * @returns {IIntentResponse}
-   */
-  private determineIntent(response: ISpeechRequest): IIntentResponse {
-    response.intents.sort((intentResponseA, intentResponseB) => {
-      if (intentResponseA.confidence > intentResponseB.confidence) return 1;
-      else if (intentResponseA.confidence < intentResponseB.confidence)
-        return -1;
-      else return 0;
-    });
-
-    return response.intents[0];
   }
 }

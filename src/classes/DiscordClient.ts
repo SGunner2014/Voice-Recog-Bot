@@ -36,14 +36,16 @@ export class DiscordClient {
    * @param {ISpeechRequest} request
    */
   public async handleAddSong(client: Client, request: ISpeechRequest) {
-    const searchTerm = request.entities["Song_Name:Song_Name"][0];
-    const result = await search(searchTerm.body);
-    this.queueSong(
-      client,
-      result.videos[0].url,
-      result.videos[0].title,
-      request.issuer
-    );
+    if (request.entities.length > 0) {
+      const searchTerm = request.entities[0];
+      const result = await search(searchTerm);
+      this.queueSong(
+        client,
+        result.videos[0].url,
+        result.videos[0].title,
+        request.issuer
+      );
+    }
   }
 
   /**
