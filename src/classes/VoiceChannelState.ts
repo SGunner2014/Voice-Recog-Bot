@@ -6,9 +6,8 @@ import { shouldExcludeUser } from "../utils/Discord";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 
 export class VoiceChannelState {
-  private channelId: string;
-  private connection: VoiceConnection;
   private googleClient: SpeechClient;
+  private connection: VoiceConnection;
   private commandHandler: VoiceCommandHandler;
   private connectedUsers: { [id: string]: GuildMember };
 
@@ -24,6 +23,7 @@ export class VoiceChannelState {
 
     this.connection.on("speaking", (user) => {
       this.createStream(user);
+      console.log("called");
     });
   }
 
@@ -65,19 +65,5 @@ export class VoiceChannelState {
       this.addConnectedUser(member);
       this.createStream(member);
     });
-  }
-
-  /**
-   * @returns {string}
-   */
-  public getChannelId(): string {
-    return this.channelId;
-  }
-
-  /**
-   * @param {string} channelId
-   */
-  public setChannelId(channelId: string) {
-    this.channelId = channelId;
   }
 }

@@ -6,6 +6,7 @@ import {
   StreamDispatcher,
   TextChannel,
   User,
+  VoiceChannel,
   VoiceConnection,
 } from "discord.js";
 
@@ -23,10 +24,22 @@ export class DiscordClient {
    * @param {Client} client
    * @param {VoiceConnection} connection
    */
-  constructor(client: Client, connection: VoiceConnection) {
-    this.queue = [];
+  constructor(client: Client) {
     this.client = client;
+  }
+
+  public onVoiceChannelJoin(connection: VoiceConnection) {
     this.connection = connection;
+    this.queue = [];
+  }
+
+  public onVoiceChannelLeave() {
+    this.connection = null;
+    this.queue = null;
+  }
+
+  public isInVoiceChannel() {
+    return Boolean(this.connection);
   }
 
   /**
@@ -119,6 +132,31 @@ export class DiscordClient {
     });
 
     this.onQueueSong();
+  }
+
+  /**
+   * @returns {IDiscordAudioQueueItem}
+   */
+  public getCurrentlyPlaying() {
+    return this.currently_playing;
+  }
+
+  /**
+   * Disconnects the bot from the current voice channel
+   */
+  public disconnect() {
+    this.connection.disconnect();
+  }
+
+  /**
+   * Connects the bot to a voice channel.
+   *
+   * @param {VoiceChannel} voiceChannel
+   */
+  public connect(voiceChannel: VoiceChannel) {
+    voiceChannel.join().then((connection) => {
+      this.connection = connection;
+    });
   }
 
   private onQueueSong() {

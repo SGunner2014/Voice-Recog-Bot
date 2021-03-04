@@ -1,4 +1,4 @@
-import { Message } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
 
 import { Command } from "./Command";
 import { DiscordClient } from "../DiscordClient";
@@ -18,7 +18,7 @@ export class QueueCommand extends Command {
   }
 
   getCommandAliases(): string[] {
-    return ["play", "skip", "list"];
+    return ["play", "skip", "queue", "list", "np"];
   }
 
   /**
@@ -40,6 +40,9 @@ export class QueueCommand extends Command {
             break;
           case "remove":
             this.handleRemoveItem(parsed, message);
+            break;
+          case "np":
+            this.handleNowPlaying(parsed, message);
             break;
         }
       }
@@ -64,6 +67,13 @@ export class QueueCommand extends Command {
    * @param {Message} message
    */
   private handleSkipSong(parsed: string[], message: Message) {
+    if (!this.discordClient.isInVoiceChannel()) {
+      message.channel.send(
+        "The bot must be in a voice channel to use this command."
+      );
+      return;
+    }
+
     this.discordClient.skipSong();
     message.react("✅");
   }
@@ -75,6 +85,13 @@ export class QueueCommand extends Command {
    * @param {Message} message
    */
   private handleQueueSong(parsed: string[], message: Message) {
+    if (!this.discordClient.isInVoiceChannel()) {
+      message.channel.send(
+        "The bot must be in a voice channel to use this command."
+      );
+      return;
+    }
+
     const searchTerm = parsed.slice(2).join(" ");
     this.discordClient.addSong(searchTerm, message.author);
     message.react("✅");
@@ -87,6 +104,13 @@ export class QueueCommand extends Command {
    * @param {Message} message
    */
   private handleListQueue(parsed: string[], message: Message) {
+    if (!this.discordClient.isInVoiceChannel()) {
+      message.channel.send(
+        "The bot must be in a voice channel to use this command."
+      );
+      return;
+    }
+
     const queue = this.discordClient.getQueue();
 
     if (queue.length) {
@@ -108,6 +132,49 @@ export class QueueCommand extends Command {
    * @param {Message} message
    */
   private handleRemoveItem(parsed: string[], message: Message) {
+    if (!this.discordClient.isInVoiceChannel()) {
+      message.channel.send(
+        "The bot must be in a voice channel to use this command."
+      );
+      return;
+    }
+
     const queue = this.discordClient.getQueue();
+  }
+
+  /**
+   * Handles a request to list the currently-playing song.
+   *
+   * @param {string[]} parsed
+   * @param {Message} message
+   */
+  private handleNowPlaying(parsed: string[], message: Message) {
+    if (!this.discordClient.isInVoiceChannel()) {
+      message.channel.send(
+        "The bot must be in a voice channel to use this command."
+      );
+      return;
+    }
+
+    const embed = new MessageEmbed()
+      .setColor("#0099ff")
+      .setTitle("Currently playing");
+
+    const currentlyPlaying = this.discordClient.getCurrentlyPlaying();
+
+    if (currentlyPlaying === undefined || currentlyPlaying === null) {
+      embed.setDescription(
+        `Nothing is currently playing, queue something with \`${process.env.TEXT_COMMAND_TRIGGER}play\``
+      );
+    } else {
+      embed.setDescription(currentlyPlaying.title).addFields({
+        name: "Queued by",
+        value: currentlyPlaying.queued_by ?? "Unknown",
+      });
+    }
+
+    embed.setTimestamp();
+
+    message.channel.send(embed);
   }
 }

@@ -13,64 +13,80 @@ import { VoiceCommandHandler } from "./classes/VoiceCommandHandler";
 config();
 bugsnag.start({ apiKey: process.env.BUGSNAG_KEY });
 
-const client = new Client();
+const officialDiscordClient = new Client();
 const googleClient = new SpeechClient();
 
+let discordClient: DiscordClient = new DiscordClient(officialDiscordClient);
 let channelState: VoiceChannelState;
-let textHandler: TextCommandHandler;
+let textHandler: TextCommandHandler = new TextCommandHandler(
+  officialDiscordClient,
+  discordClient
+);
+
+const onVoiceChannelJoin = (connection: VoiceConnection) => {
+  channelState = new VoiceChannelState(
+    connection,
+    googleClient,
+    new VoiceCommandHandler(officialDiscordClient, discordClient)
+  );
+  discordClient.onVoiceChannelJoin(connection);
+  connection.play(new Silence(), { type: "opus" });
+  channelState.handleJoinedChannel(connection);
+};
+
+const onVoiceChannelLeave = (connection: VoiceConnection) => {
+  textHandler.onVoiceChannelLeave();
+  discordClient.onVoiceChannelLeave();
+  channelState = null;
+};
 
 // On bot logged in and ready
-client.on("ready", async () => {
+officialDiscordClient.on("ready", async () => {
   console.log("Logged in and connected");
 
-  const voice_channel = (await client.channels.fetch(
+  const voice_channel = (await officialDiscordClient.channels.fetch(
     process.env.VOICE_CHANNEL
   )) as VoiceChannel;
-  voice_channel.join().then(async (connection: VoiceConnection) => {
-    console.log("Joined voice channel");
-    const discordClient = new DiscordClient(client, connection);
-
-    channelState = new VoiceChannelState(
-      connection,
-      googleClient,
-      new VoiceCommandHandler(client, discordClient)
-    );
-    channelState.setChannelId(process.env.VOICE_CHANNEL);
-    connection.play(new Silence(), { type: "opus" });
-
-    channelState.handleJoinedChannel(connection);
-
-    textHandler = new TextCommandHandler(client, discordClient);
-  });
+  voice_channel.join();
 });
 
 // On member leave or join voice channel
-client.on("voiceStateUpdate", (oldState, newState) => {
-  setTimeout(() => {
-    if (newState.channel) {
-      if (shouldExcludeUser(newState.member.id)) {
-        return;
-      }
-
-      // User has connected
-      channelState.addConnectedUser(newState.member);
-      channelState.createStream(newState.member);
-    } else if (oldState.channel) {
-      if (shouldExcludeUser(oldState.member.id)) {
-        return;
-      }
-
-      // User has disconnected
-      channelState.removeConnectedUser(oldState.member);
+officialDiscordClient.on("voiceStateUpdate", (oldState, newState) => {
+  if (newState.channel) {
+    // We've just joined a channel, do something
+    if (newState.member.id === officialDiscordClient.user.id) {
+      onVoiceChannelJoin(newState.connection);
+      return;
     }
-  }, 1000);
+
+    if (shouldExcludeUser(newState.member.id)) {
+      return;
+    }
+
+    // User has connected
+    channelState.addConnectedUser(newState.member);
+    channelState.createStream(newState.member);
+  } else if (oldState.channel) {
+    // We've just left a channel, do something
+    if (newState.member.id === officialDiscordClient.user.id) {
+      onVoiceChannelLeave(newState.connection);
+      return;
+    }
+
+    if (shouldExcludeUser(oldState.member.id)) {
+      return;
+    }
+
+    // User has disconnected
+    channelState.removeConnectedUser(oldState.member);
+  }
 });
 
 // On message send
-client.on("message", (message) => {
+officialDiscordClient.on("message", (message) => {
   textHandler.handleIncomingMessage(message);
 });
 
-client.on("guildMemberSpeaking", (member) => {});
+officialDiscordClient.on("guildMemberSpeaking", (member) => {});
 
-client.login(process.env.TOKEN);
+officialDiscordClient.login(process.env.TOKEN);
