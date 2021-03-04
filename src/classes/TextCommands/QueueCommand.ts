@@ -75,7 +75,6 @@ export class QueueCommand extends Command {
     }
 
     this.discordClient.skipSong();
-    message.react("✅");
   }
 
   /**
@@ -94,7 +93,6 @@ export class QueueCommand extends Command {
 
     const searchTerm = parsed.slice(2).join(" ");
     this.discordClient.addSong(searchTerm, message.author);
-    message.react("✅");
   }
 
   /**

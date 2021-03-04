@@ -13,8 +13,11 @@ export class TextCommandHandler {
   private client: Client;
   private commands: Command[];
   private discordClient: DiscordClient;
-  private hasJoinedVoiceChannel: boolean = false;
 
+  /**
+   * @param {Client} client
+   * @param {DiscordClient} discordClient
+   */
   constructor(client: Client, discordClient: DiscordClient) {
     this.commands = [];
     this.client = client;
@@ -27,6 +30,7 @@ export class TextCommandHandler {
     this.commands.push(new ConnectCommand());
     this.commands.push(new DisconnectCommand());
 
+    // Initialise each command with list of cmds & discord client
     this.commands.forEach((command, index) => {
       command.onCommandInit(this.commands, this.discordClient);
     });
@@ -34,7 +38,6 @@ export class TextCommandHandler {
 
   public onVoiceChannelLeave() {
     this.discordClient = null;
-    this.hasJoinedVoiceChannel = false;
   }
 
   /**
@@ -51,7 +54,11 @@ export class TextCommandHandler {
           command.getAliases().includes(args[0]) ||
           command.getCommandAliases().includes(args[0])
         ) {
-          command.onCommandCall(args, message);
+          try {
+            command.onCommandCall(args, message);
+          } catch (e) {
+            //
+          }
           return false;
         } else {
           return true;

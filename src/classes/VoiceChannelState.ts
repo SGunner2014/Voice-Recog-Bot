@@ -23,7 +23,6 @@ export class VoiceChannelState {
 
     this.connection.on("speaking", (user) => {
       this.createStream(user);
-      console.log("called");
     });
   }
 
@@ -34,17 +33,22 @@ export class VoiceChannelState {
     this.connectedUsers[member.id] = member;
   }
 
+  /**
+   * @param {GuildMember} member
+   */
   public removeConnectedUser(member: GuildMember) {
     delete this.connectedUsers[member.id];
   }
 
+  /**
+   * @returns {{ [id: string]: GuildMember }}
+   */
   public getConnectedUsers() {
     return this.connectedUsers;
   }
 
   /**
-   * @param {VoiceConnection} connection
-   * @param {GuildMember} member
+   * @param {GuildMember | User} member
    */
   public createStream(member: GuildMember | User) {
     if (shouldExcludeUser(member.id)) {
