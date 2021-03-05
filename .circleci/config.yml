@@ -25,10 +25,13 @@ jobs:
 workflows:
   build_test:
     jobs:
-      - run_tests
+      - run_tests:
+          filters:
+            branches:
+              only: develop
   deploy:
     jobs:
-      - deploy
+      - deploy:
           requires:
             - run_tests
           filters:
