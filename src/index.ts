@@ -36,7 +36,7 @@ const onVoiceChannelJoin = (connection: VoiceConnection) => {
 
 const onVoiceChannelLeave = (connection: VoiceConnection) => {
   textHandler.onVoiceChannelLeave();
-  discordClient.onVoiceChannelLeave();
+  discordClient.onVoiceChannelLeave(connection.channel.guild);
   channelState = null;
 };
 

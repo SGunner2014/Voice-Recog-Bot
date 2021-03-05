@@ -1,5 +1,4 @@
 import ytdl from "ytdl-core";
-import { search } from "yt-search";
 import {
   Client,
   Guild,
@@ -10,6 +9,7 @@ import {
   VoiceChannel,
   VoiceConnection,
 } from "discord.js";
+import { search } from "yt-search";
 
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 import { IDiscordAudioQueueItem } from "../interfaces/IDiscordAudioQueueItem";
@@ -49,12 +49,28 @@ export class DiscordClient {
     }
   }
 
+  /**
+   * Invoked when the bot leaves a voice channel
+   *
+   * @param {Guild} guild
+   */
   public onVoiceChannelLeave(guild: Guild) {
-    if (this.)
+    try {
+      delete this.connections[guild.id];
+    } catch (e) {
+      // This shouldn't happen
+      Bugsnag.notify(e);
+    }
   }
 
-  public isInVoiceChannel(serverId?: string) {
-    return Boolean(this.connection);
+  /**
+   * Checks if the bot is currently in a voice channel
+   *
+   * @param {string} serverId
+   * @returns {boolean}
+   */
+  public isInVoiceChannel(serverId: string) {
+    return Boolean(this.connections[serverId]);
   }
 
   /**
