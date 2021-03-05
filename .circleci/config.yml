@@ -29,8 +29,8 @@ workflows:
   deploy:
     jobs:
       - deploy
-        requires:
-          - run_tests
-        filters:
-          branches:
-            only: main
+          requires:
+            - run_tests
+          filters:
+            branches:
+              only: main
