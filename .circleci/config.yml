@@ -6,13 +6,13 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Install npm deps
-        command: |
-          npm install --save
+          name: Install npm deps
+          command: |
+            npm install --save
       - run:
-        name: Run Unit Tests
-        command: |
-          npm run test
+          name: Run Unit Tests
+          command: |
+            npm run test
 workflows:
   build_test:
     jobs:
