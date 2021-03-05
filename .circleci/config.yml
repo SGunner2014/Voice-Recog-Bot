@@ -6,14 +6,35 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Install npm deps
-        command: |
-          npm install --save
+          name: Install npm deps
+          command: |
+            npm install --save
       - run:
-        name: Run Unit Tests
-        command: |
-          npm run test
+          name: Run Unit Tests
+          command: |
+            npm run test
+  deploy:
+    machine:
+      enabled: true
+    steps:
+      - add_ssh_keys
+      - run:
+          name: Deploy via SSH
+          command: |
+            ssh $SSH_USER@$SSH_HOST "./deploy.sh"
 workflows:
   build_test:
     jobs:
+      - run_tests:
+          filters:
+            branches:
+              only: develop
+  deploy:
+    jobs:
       - run_tests
+      - deploy:
+          requires:
+            - run_tests
+          filters:
+            branches:
+              only: main
