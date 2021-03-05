@@ -18,10 +18,10 @@ jobs:
       enabled: true
     steps:
       - add_ssh_keys
-      -run:
-        name: Deploy via SSH
-        command: |
-          ssh $SSH_USER@$SSH_HOST "./deploy.sh"
+      - run:
+          name: Deploy via SSH
+          command: |
+            ssh $SSH_USER@$SSH_HOST "./deploy.sh"
 workflows:
   build_test:
     jobs:
