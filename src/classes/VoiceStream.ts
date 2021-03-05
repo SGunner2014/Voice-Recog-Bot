@@ -1,6 +1,6 @@
 import ffmpeg from "fluent-ffmpeg";
-import { SpeechClient } from "@google-cloud/speech";
 import { PassThrough, Writable } from "stream";
+import { SpeechClient } from "@google-cloud/speech";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { EIntent } from "../enums/EIntent";

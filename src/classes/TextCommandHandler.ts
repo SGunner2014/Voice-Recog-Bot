@@ -6,6 +6,7 @@ import { HelpCommand } from "./TextCommands/HelpCommand";
 import { HelloCommand } from "./TextCommands/HelloCommand";
 import { QueueCommand } from "./TextCommands/QueueCommand";
 import { UptimeCommand } from "./TextCommands/UptimeCommand";
+import { ConnectCommand } from "./TextCommands/ConnectCommand";
 import { DisconnectCommand } from "./TextCommands/DisconnectCommand";
 
 export class TextCommandHandler {
@@ -13,6 +14,10 @@ export class TextCommandHandler {
   private commands: Command[];
   private discordClient: DiscordClient;
 
+  /**
+   * @param {Client} client
+   * @param {DiscordClient} discordClient
+   */
   constructor(client: Client, discordClient: DiscordClient) {
     this.commands = [];
     this.client = client;
@@ -22,11 +27,17 @@ export class TextCommandHandler {
     this.commands.push(new HelloCommand());
     this.commands.push(new QueueCommand());
     this.commands.push(new UptimeCommand());
+    this.commands.push(new ConnectCommand());
     this.commands.push(new DisconnectCommand());
 
+    // Initialise each command with list of cmds & discord client
     this.commands.forEach((command, index) => {
-      command.onCommandInit(this.commands, discordClient);
+      command.onCommandInit(this.commands, this.discordClient);
     });
+  }
+
+  public onVoiceChannelLeave() {
+    this.discordClient = null;
   }
 
   /**
@@ -43,7 +54,11 @@ export class TextCommandHandler {
           command.getAliases().includes(args[0]) ||
           command.getCommandAliases().includes(args[0])
         ) {
-          command.onCommandCall(args, message);
+          try {
+            command.onCommandCall(args, message);
+          } catch (e) {
+            //
+          }
           return false;
         } else {
           return true;

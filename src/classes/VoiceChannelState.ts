@@ -6,9 +6,8 @@ import { shouldExcludeUser } from "../utils/Discord";
 import { VoiceCommandHandler } from "./VoiceCommandHandler";
 
 export class VoiceChannelState {
-  private channelId: string;
-  private connection: VoiceConnection;
   private googleClient: SpeechClient;
+  private connection: VoiceConnection;
   private commandHandler: VoiceCommandHandler;
   private connectedUsers: { [id: string]: GuildMember };
 
@@ -34,17 +33,22 @@ export class VoiceChannelState {
     this.connectedUsers[member.id] = member;
   }
 
+  /**
+   * @param {GuildMember} member
+   */
   public removeConnectedUser(member: GuildMember) {
     delete this.connectedUsers[member.id];
   }
 
+  /**
+   * @returns {{ [id: string]: GuildMember }}
+   */
   public getConnectedUsers() {
     return this.connectedUsers;
   }
 
   /**
-   * @param {VoiceConnection} connection
-   * @param {GuildMember} member
+   * @param {GuildMember | User} member
    */
   public createStream(member: GuildMember | User) {
     if (shouldExcludeUser(member.id)) {
@@ -65,19 +69,5 @@ export class VoiceChannelState {
       this.addConnectedUser(member);
       this.createStream(member);
     });
-  }
-
-  /**
-   * @returns {string}
-   */
-  public getChannelId(): string {
-    return this.channelId;
-  }
-
-  /**
-   * @param {string} channelId
-   */
-  public setChannelId(channelId: string) {
-    this.channelId = channelId;
   }
 }
