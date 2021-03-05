@@ -29,7 +29,7 @@ const onVoiceChannelJoin = (connection: VoiceConnection) => {
     googleClient,
     new VoiceCommandHandler(officialDiscordClient, discordClient)
   );
-  discordClient.onVoiceChannelJoin(connection);
+  discordClient.onVoiceChannelJoin(connection, connection.channel.guild);
   connection.play(new Silence(), { type: "opus" });
   channelState.handleJoinedChannel(connection);
 };

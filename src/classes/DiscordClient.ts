@@ -2,6 +2,7 @@ import ytdl from "ytdl-core";
 import { search } from "yt-search";
 import {
   Client,
+  Guild,
   GuildMember,
   StreamDispatcher,
   TextChannel,
@@ -12,12 +13,16 @@ import {
 
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 import { IDiscordAudioQueueItem } from "../interfaces/IDiscordAudioQueueItem";
+import { IHash } from "../interfaces/IHash";
+import { IDiscordVoiceConnection } from "../interfaces/IDiscordVoiceConnection";
+import Bugsnag from "@bugsnag/js";
 
 export class DiscordClient {
   private client: Client;
   private connection: VoiceConnection;
   private queue: IDiscordAudioQueueItem[];
   private currentStream: StreamDispatcher = null;
+  private connections: IHash<IDiscordVoiceConnection>;
   private currently_playing: IDiscordAudioQueueItem = null;
 
   /**
@@ -26,19 +31,29 @@ export class DiscordClient {
    */
   constructor(client: Client) {
     this.client = client;
+    this.connections = {};
   }
 
-  public onVoiceChannelJoin(connection: VoiceConnection) {
-    this.connection = connection;
-    this.queue = [];
+  /**
+   * Invoked when the bot joins a new voice channel
+   *
+   * @param {VoiceConnection} connection
+   * @param {Guild} guild
+   */
+  public onVoiceChannelJoin(connection: VoiceConnection, guild: Guild) {
+    try {
+      this.connections[guild.id] = { guild, connection };
+    } catch (e) {
+      // This shouldn't happen
+      Bugsnag.notify(e);
+    }
   }
 
-  public onVoiceChannelLeave() {
-    this.connection = null;
-    this.queue = null;
+  public onVoiceChannelLeave(guild: Guild) {
+    if (this.)
   }
 
-  public isInVoiceChannel() {
+  public isInVoiceChannel(serverId?: string) {
     return Boolean(this.connection);
   }
 

@@ -1,13 +1,8 @@
 import { Client, Message } from "discord.js";
 
+import { Command } from "./commands/Command";
 import { DiscordClient } from "./DiscordClient";
-import { Command } from "./TextCommands/Command";
-import { HelpCommand } from "./TextCommands/HelpCommand";
-import { HelloCommand } from "./TextCommands/HelloCommand";
-import { QueueCommand } from "./TextCommands/QueueCommand";
-import { UptimeCommand } from "./TextCommands/UptimeCommand";
-import { ConnectCommand } from "./TextCommands/ConnectCommand";
-import { DisconnectCommand } from "./TextCommands/DisconnectCommand";
+import { QueueCommand } from "./commands/QueueCommand";
 
 export class TextCommandHandler {
   private client: Client;
@@ -23,16 +18,11 @@ export class TextCommandHandler {
     this.client = client;
     this.discordClient = discordClient;
 
-    this.commands.push(new HelpCommand());
-    this.commands.push(new HelloCommand());
     this.commands.push(new QueueCommand());
-    this.commands.push(new UptimeCommand());
-    this.commands.push(new ConnectCommand());
-    this.commands.push(new DisconnectCommand());
 
     // Initialise each command with list of cmds & discord client
     this.commands.forEach((command, index) => {
-      command.onCommandInit(this.commands, this.discordClient);
+      command.onCommandInit(this.discordClient, this.commands);
     });
   }
 
@@ -50,12 +40,11 @@ export class TextCommandHandler {
       const args = message.content.toLowerCase().slice(1).split(" ");
       this.commands.every((command, index) => {
         if (
-          command.getName() === args[0] ||
-          command.getAliases().includes(args[0]) ||
-          command.getCommandAliases().includes(args[0])
+          command.name === args[0] ||
+          command.commandAlias.includes(args[0])
         ) {
           try {
-            command.onCommandCall(args, message);
+            command.onTextCommandCall(args, message);
           } catch (e) {
             //
           }
