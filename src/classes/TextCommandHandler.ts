@@ -3,6 +3,9 @@ import { Client, Message } from "discord.js";
 import { Command } from "./commands/Command";
 import { DiscordClient } from "./DiscordClient";
 import { QueueCommand } from "./commands/QueueCommand";
+import { UptimeCommand } from "./commands/UptimeCommand";
+import { ConnectCommand } from "./commands/ConnectCommand";
+import { DisconnectCommand } from "./commands/DisconnectCommand";
 
 export class TextCommandHandler {
   private client: Client;
@@ -19,6 +22,9 @@ export class TextCommandHandler {
     this.discordClient = discordClient;
 
     this.commands.push(new QueueCommand());
+    this.commands.push(new UptimeCommand());
+    this.commands.push(new ConnectCommand());
+    this.commands.push(new DisconnectCommand());
 
     // Initialise each command with list of cmds & discord client
     this.commands.forEach((command, index) => {
@@ -47,6 +53,7 @@ export class TextCommandHandler {
             command.onTextCommandCall(args, message);
           } catch (e) {
             //
+            console.log(e);
           }
           return false;
         } else {

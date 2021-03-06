@@ -176,8 +176,10 @@ export class DiscordClient {
   /**
    * Disconnects the bot from the current voice channel
    */
-  public disconnect() {
-    this.connection.disconnect();
+  public disconnect(serverId: string) {
+    this.connections[serverId].stream?.end();
+    this.connections[serverId].connection.disconnect();
+    delete this.connections[serverId];
   }
 
   /**

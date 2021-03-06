@@ -31,6 +31,9 @@ export class QueueCommand extends Command {
         case "add":
           this.handleAddSong(parsed, message);
           break;
+        case "skip":
+          this.handleSkip(parsed, message);
+          break;
       }
     } else {
       // Just return the queue
@@ -126,13 +129,38 @@ export class QueueCommand extends Command {
   }
 
   /**
+   * Skips the currently playing song
+   *
+   * @param {string[]} parsed
+   * @param {Message} message
+   */
+  private handleSkip(parsed: string[], message: Message) {
+    const serverId = message.guild.id;
+
+    if (!this.discordClient.isInVoiceChannel(serverId)) {
+      message.channel.send(
+        "The bot must be in a voice channel to use this command."
+      );
+      return;
+    }
+
+    if (!this.queues[serverId].currently_playing) {
+      message.channel.send("Nothing is currently playing.");
+      return;
+    }
+
+    this.forceSongSkip(serverId);
+  }
+
+  /**
    * @param serverId
    */
   private forceSongSkip(serverId: string) {
+    this.discordClient.stopAudio(serverId);
+
     if (this.queues[serverId].items.length > 0) {
       const nextItem = this.queues[serverId].items.shift();
       this.queues[serverId].currently_playing = nextItem;
-      this.discordClient.stopAudio(serverId);
       this.discordClient.playAudio(
         ytdl(nextItem.url, { quality: "highestaudio" }),
         serverId,

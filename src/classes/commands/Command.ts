@@ -6,15 +6,17 @@ import { ICompleteCommandAlias } from "../../interfaces/ICompleteCommandAlias";
 export abstract class Command {
   public name: String;
   public commandAlias?: string;
-  private middleware?: string[];
+  public middleware?: string[];
+  public isTextEnabled: boolean = true;
+  public isVoiceEnabled: boolean = false;
   public completeAliases?: ICompleteCommandAlias[];
 
   public onCommandInit(
     discordClient: DiscordClient,
     loadedCommands: Command[]
   ) {}
-  public onTextHelpCall(parsed: string[], message: Message) {}
   public onCommandDestroy() {}
+  public onTextHelpCall(parsed: string[], message: Message) {}
   public onTextCommandCall(parsed: string[], message: Message) {}
   public onVoiceCommandCall(parsed: string[]) {}
 }

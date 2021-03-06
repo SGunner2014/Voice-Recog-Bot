@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import bugsnag from "@bugsnag/js";
 import { SpeechClient } from "@google-cloud/speech";
-import { Client, VoiceChannel, VoiceConnection } from "discord.js";
+import { Client, Guild, VoiceChannel, VoiceConnection } from "discord.js";
 
 import { Silence } from "./classes/Silence";
 import { shouldExcludeUser } from "./utils/Discord";
@@ -32,11 +32,15 @@ const onVoiceChannelJoin = (connection: VoiceConnection) => {
   discordClient.onVoiceChannelJoin(connection, connection.channel.guild);
   connection.play(new Silence(), { type: "opus" });
   channelState.handleJoinedChannel(connection);
+
+  const server = connection.channel.guild;
+
+  connection.on("disconnect", () => onVoiceChannelLeave(connection, server));
 };
 
-const onVoiceChannelLeave = (connection: VoiceConnection) => {
+const onVoiceChannelLeave = (connection: VoiceConnection, server: Guild) => {
   textHandler.onVoiceChannelLeave();
-  discordClient.onVoiceChannelLeave(connection.channel.guild);
+  discordClient.onVoiceChannelLeave(server);
   channelState = null;
 };
 
@@ -69,7 +73,6 @@ officialDiscordClient.on("voiceStateUpdate", (oldState, newState) => {
   } else if (oldState.channel) {
     // We've just left a channel, do something
     if (newState.member.id === officialDiscordClient.user.id) {
-      onVoiceChannelLeave(newState.connection);
       return;
     }
 
