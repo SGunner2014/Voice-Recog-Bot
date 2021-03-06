@@ -16,6 +16,7 @@ import { IDiscordAudioQueueItem } from "../interfaces/IDiscordAudioQueueItem";
 import { IHash } from "../interfaces/IHash";
 import { IDiscordVoiceConnection } from "../interfaces/IDiscordVoiceConnection";
 import Bugsnag from "@bugsnag/js";
+import { Readable } from "stream";
 
 export class DiscordClient {
   private client: Client;
@@ -202,6 +203,54 @@ export class DiscordClient {
     this.currently_playing = null;
     // clear presence here
     this.onQueueSong();
+  }
+
+  /**
+   *
+   * @param audio
+   * @param serverId
+   * @param onStart
+   * @param onFinish
+   * @returns {StreamDispatcher}
+   */
+  public playAudio(
+    audio: Readable,
+    serverId: string,
+    onStart?: (serverId: string) => any,
+    onFinish?: (serverId: string) => any
+  ) {
+    try {
+      this.connections[serverId].stream = this.connections[serverId].connection
+        .play(audio)
+        .on("start", () => onStart(serverId))
+        .on("finish", () => onFinish(serverId));
+    } catch (e) {
+      // this shouldn't happen
+      Bugsnag.notify(e);
+    }
+  }
+
+  /**
+   * Attempts to stop the currently-playing audio stream for the specified
+   * server.
+   *
+   * @param {string} serverId
+   */
+  public stopAudio(serverId: string) {
+    try {
+      this.connections[serverId].stream?.end();
+      delete this.connections[serverId].stream;
+    } catch (e) {
+      // this shouldn't happen
+      Bugsnag.notify(e);
+    }
+  }
+
+  /**
+   * @returns {Client}
+   */
+  public getDiscordClient() {
+    return this.client;
   }
 
   /**

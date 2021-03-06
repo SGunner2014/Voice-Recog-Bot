@@ -41,7 +41,7 @@ export class TextCommandHandler {
       this.commands.every((command, index) => {
         if (
           command.name === args[0] ||
-          command.commandAlias.includes(args[0])
+          command.commandAlias?.includes(args[0])
         ) {
           try {
             command.onTextCommandCall(args, message);
