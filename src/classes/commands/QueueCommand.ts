@@ -1,14 +1,19 @@
 import ytdl from "ytdl-core";
 import { search } from "yt-search";
-import { Client, Message, MessageEmbed } from "discord.js";
+import { Message, MessageEmbed, User } from "discord.js";
 
 import { Command } from "./Command";
 import { IHash } from "../../interfaces/IHash";
 import { DiscordClient } from "../DiscordClient";
+import { ISpeechRequest } from "../../interfaces/ISpeechRequest";
 import { IDiscordAudioQueue } from "../../interfaces/IDiscordAudioQueue";
+import { EIntent } from "../../enums/EIntent";
+import { IDiscordAudioQueueItem } from "../../interfaces/IDiscordAudioQueueItem";
 
 export class QueueCommand extends Command {
   public name = "queue";
+  public isVoiceEnabled = true;
+  public voiceIntents = [EIntent.PLAY_SONG, EIntent.SKIP_SONG];
 
   private discordClient: DiscordClient;
   private queues: IHash<IDiscordAudioQueue>;
@@ -38,6 +43,26 @@ export class QueueCommand extends Command {
     } else {
       // Just return the queue
       this.handleListQueue(parsed, message);
+    }
+  }
+
+  /**
+   * Handler for voice calls to this command
+   *
+   * @param request
+   */
+  public onVoiceCommandCall(request: ISpeechRequest) {
+    switch (request.intent) {
+      case EIntent.PLAY_SONG:
+        this.internalAddSong(
+          request.entities[0],
+          request.serverId,
+          request.issuer
+        );
+        break;
+      case EIntent.SKIP_SONG:
+        this.internalSkipSong(request.serverId);
+        break;
     }
   }
 
@@ -92,40 +117,26 @@ export class QueueCommand extends Command {
       return;
     }
 
-    if (!this.queues[serverId]) {
-      this.queues[serverId] = { items: [], server_id: serverId };
-    }
-
     const embed = new MessageEmbed().setColor("#0099ff");
     const searchTerm = parsed.slice(2).join(" ");
-    const results = await search(searchTerm);
+    const result = await this.internalAddSong(
+      searchTerm,
+      serverId,
+      message.author
+    );
 
-    if (results.videos.length === 0) {
+    if (!result) {
       message.channel.send("No results found.");
       return;
     }
 
-    this.queues[serverId].items.push({
-      is_playing: false,
-      title: results.videos[0].title,
-      url: results.videos[0].url,
-      queued_at: null,
-      queued_by: message.author,
-    });
-
     embed
       .setTitle("Video successfully queued.")
-      .setDescription(results.videos[0].title)
-      .setThumbnail(results.videos[0].thumbnail)
+      .setDescription(result.title)
+      .setThumbnail(result.thumbnail)
       .setTimestamp();
 
     message.channel.send(embed);
-
-    // Finally, if there is no video currently playing we should start
-    // this one off.
-    if (!this.queues[serverId].currently_playing) {
-      this.forceSongSkip(serverId);
-    }
   }
 
   /**
@@ -144,12 +155,64 @@ export class QueueCommand extends Command {
       return;
     }
 
-    if (!this.queues[serverId].currently_playing) {
+    if (!this.internalSkipSong(serverId)) {
       message.channel.send("Nothing is currently playing.");
       return;
     }
+  }
+
+  /**
+   * Skips the currently-playing song
+   *
+   * @param {string} serverId
+   */
+  private internalSkipSong(serverId: string): boolean {
+    if (!this.queues[serverId].currently_playing) {
+      return false;
+    }
 
     this.forceSongSkip(serverId);
+  }
+
+  /**
+   * Adds a song to the specified queue
+   *
+   * @param {string} searchTerm
+   * @param {string} serverId
+   */
+  private async internalAddSong(
+    searchTerm: string,
+    serverId: string,
+    requester: User
+  ): Promise<IDiscordAudioQueueItem> {
+    const results = await search(searchTerm);
+
+    if (results.videos.length === 0) {
+      return undefined;
+    }
+
+    if (!this.queues[serverId]) {
+      this.queues[serverId] = { items: [], server_id: serverId };
+    }
+
+    const queueItem = {
+      is_playing: false,
+      title: results.videos[0].title,
+      url: results.videos[0].url,
+      queued_at: null,
+      queued_by: requester,
+      thumbnail: results.videos[0].thumbnail,
+    };
+
+    this.queues[serverId].items.push(queueItem);
+
+    // Finally, if there is no video currently playing we should start
+    // this one off.
+    if (!this.queues[serverId].currently_playing) {
+      this.forceSongSkip(serverId);
+    }
+
+    return queueItem;
   }
 
   /**

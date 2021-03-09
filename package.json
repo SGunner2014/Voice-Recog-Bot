@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "ts-node src/index.ts",
-    "test": "echo complete"
+    "test": "jest --forceExit --detectOpenHandles"
   },
   "dependencies": {
     "@bugsnag/js": "^7.6.0",
@@ -20,7 +20,6 @@
     "fs": "^0.0.1-security",
     "human-time": "^0.0.2",
     "node": "^15.4.0",
-    "node-wit": "^6.0.0",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.3",
     "wav-decoder": "^1.3.0",

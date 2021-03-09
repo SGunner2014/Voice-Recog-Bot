@@ -3,6 +3,7 @@ import { GuildMember, User } from "discord.js";
 export interface IDiscordAudioQueueItem {
   url: string;
   title: string;
+  thumbnail: string;
   filename?: string;
   queued_at: number;
   timestamp?: number;

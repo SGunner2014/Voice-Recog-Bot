@@ -4,7 +4,7 @@ import { SpeechClient } from "@google-cloud/speech";
 import { GuildMember, User, VoiceConnection } from "discord.js";
 
 import { EIntent } from "../enums/EIntent";
-import { VoiceCommandHandler } from "./VoiceCommandHandler";
+import { CommandHandler } from "./CommandHandler";
 import { ISpeechRequest } from "../interfaces/ISpeechRequest";
 
 const AUDIO_BITRATE = 16_000;
@@ -13,9 +13,10 @@ const MAX_SAMPLE_LENGTH = 10;
 
 export class VoiceStream {
   private buff: any[];
-  private member: GuildMember | User;
+  private member: User;
+  private serverId: string;
   private googleClient: SpeechClient;
-  private commandHandler: VoiceCommandHandler;
+  private commandHandler: CommandHandler;
   private audioStream: Writable | PassThrough;
 
   /**
@@ -23,9 +24,9 @@ export class VoiceStream {
    * @param {VoiceConnection} connection
    */
   constructor(
-    member: GuildMember | User,
+    member: User,
     connection: VoiceConnection,
-    commandHandler: VoiceCommandHandler,
+    commandHandler: CommandHandler,
     googleClient: SpeechClient
   ) {
     this.member = member;
@@ -51,6 +52,8 @@ export class VoiceStream {
       .on("end", async () => {
         await this.handleEnd();
       });
+
+    this.serverId = connection.channel.guild.id;
   }
 
   /**
@@ -107,7 +110,7 @@ export class VoiceStream {
 
       const toProcess = this.determineIntent(results);
 
-      await this.commandHandler.handleIncomingCommand(toProcess);
+      this.commandHandler.handleIncomingVoiceCommand(toProcess);
     } catch (e) {
       console.log(e);
     }
@@ -122,15 +125,25 @@ export class VoiceStream {
           intent: EIntent.PLAY_SONG,
           entities: [results.substring(command.length + 1)],
           text: results,
+          serverId: this.serverId,
+          issuer: this.member,
         };
       case "skip":
         return {
           intent: EIntent.SKIP_SONG,
           entities: [],
           text: results,
+          serverId: this.serverId,
+          issuer: this.member,
         };
       default:
-        return { intent: EIntent.UNKNOWN, entities: [], text: results };
+        return {
+          intent: EIntent.UNKNOWN,
+          entities: [],
+          text: results,
+          serverId: this.serverId,
+          issuer: this.member,
+        };
     }
   }
 
